@@ -74,6 +74,9 @@ class HTTPClient(object):
         body = ''
         url = parse.urlparse(url)
         path = url.path
+        # if not path.startswith("http:"):
+        #     print("Cannot handle https")
+        #     quit()
         if not path:
             path = "/"
         elif not path.endswith("/") and not path.endswith(".html") and not path.endswith(".css"):
@@ -88,22 +91,23 @@ class HTTPClient(object):
         self.connect(host, port)
         request = "GET " + path + " HTTP/1.1\r\nHost: " + host + "\r\nConnection: close\r\n\r\n"
         self.sendall(request)
-        self.socket.shutdown(socket.SHUT_WR)
-        response = self.recvall(self.socket)
         
+        response = self.recvall(self.socket)
+        self.socket.shutdown(socket.SHUT_WR)
         self.close()
-        status = 0
 
-        status = int(response.split("\r\n")[0].split(" ")[1])
+        header = response.split("\r\n")[0]
         response = response.split("\r\n\r\n")
         if len(response) > 1:
             body = response[1]
-        code = int(status)
+        print(header+ "\n\n\n")
+        code = int(header.split(" ")[1])
         return HTTPResponse(code, body)
 
     def POST(self, url, args=None):
         code = 500
         body = ''
+        
         if args:
             vars = parse.urlencode(args)
         else:
@@ -128,10 +132,11 @@ class HTTPClient(object):
         self.socket.shutdown(socket.SHUT_WR)
         response = self.recvall(self.socket)
         self.close()
+        header = response.split("\r\n")[0]
         response = response.split("\r\n\r\n")
         if len(response) > 1:
             body = response[1]
-        code = int(response[0].split(" ")[1])
+        code = int(header.split(" ")[1])
         return HTTPResponse(code, body)
 
     def command(self, url, command="GET", args=None):
